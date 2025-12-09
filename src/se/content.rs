@@ -83,6 +83,8 @@ pub struct ContentSerializer<'w, 'i, W: Write> {
     // If `true`, then empty elements will be serialized as `<element></element>`
     // instead of `<element/>`.
     pub expand_empty_elements: bool,
+    /// Enable or disable adding a space before the closing `>` or `/>`.
+    pub space_before_closing_tag: bool,
 }
 
 impl<'w, 'i, W: Write> ContentSerializer<'w, 'i, W> {
@@ -125,6 +127,7 @@ impl<'w, 'i, W: Write> ContentSerializer<'w, 'i, W> {
             text_format: self.text_format,
             allow_primitive,
             expand_empty_elements: self.expand_empty_elements,
+            space_before_closing_tag: self.space_before_closing_tag,
         }
     }
 
@@ -605,6 +608,7 @@ pub(super) mod tests {
                         text_format: TextFormat::Text,
                         allow_primitive: true,
                         expand_empty_elements: false,
+                        space_before_closing_tag: false,
                     };
 
                     let result = $data.serialize(ser).unwrap();
@@ -629,6 +633,7 @@ pub(super) mod tests {
                         text_format: TextFormat::Text,
                         allow_primitive: true,
                         expand_empty_elements: false,
+                        space_before_closing_tag: false,
                     };
 
                     match $data.serialize(ser).unwrap_err() {
@@ -1071,6 +1076,7 @@ pub(super) mod tests {
                         text_format: TextFormat::Text,
                         allow_primitive: true,
                         expand_empty_elements: false,
+                        space_before_closing_tag: false,
                     };
 
                     let result = $data.serialize(ser).unwrap();
@@ -1095,6 +1101,7 @@ pub(super) mod tests {
                         text_format: TextFormat::Text,
                         allow_primitive: true,
                         expand_empty_elements: false,
+                        space_before_closing_tag: false,
                     };
 
                     match $data.serialize(ser).unwrap_err() {

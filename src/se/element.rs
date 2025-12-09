@@ -443,6 +443,7 @@ impl<'w, 'k, W: Write> Struct<'w, 'k, W> {
             text_format: self.ser.ser.text_format,
             allow_primitive: true,
             expand_empty_elements: self.ser.ser.expand_empty_elements,
+            space_before_closing_tag: self.ser.ser.space_before_closing_tag,
         };
 
         if key == TEXT_KEY {
@@ -479,6 +480,9 @@ impl<'w, 'k, W: Write> SerializeStruct for Struct<'w, 'k, W> {
         self.ser.ser.indent.decrease();
 
         if self.children.is_empty() {
+            if self.ser.ser.space_before_closing_tag {
+                self.ser.ser.writer.write_char(' ')?;
+            }
             if self.ser.ser.expand_empty_elements {
                 self.ser.ser.writer.write_str("></")?;
                 self.ser.ser.writer.write_str(self.ser.key.0)?;
@@ -487,6 +491,9 @@ impl<'w, 'k, W: Write> SerializeStruct for Struct<'w, 'k, W> {
                 self.ser.ser.writer.write_str("/>")?;
             }
         } else {
+            if self.ser.ser.space_before_closing_tag {
+                self.ser.ser.writer.write_char(' ')?;
+            }
             self.ser.ser.writer.write_char('>')?;
             self.ser.ser.writer.write_str(&self.children)?;
 
@@ -636,6 +643,7 @@ mod tests {
                             text_format: TextFormat::Text,
                             allow_primitive: true,
                             expand_empty_elements: false,
+                            space_before_closing_tag: false,
                         },
                         key: XmlName("root"),
                     };
@@ -663,6 +671,7 @@ mod tests {
                             text_format: TextFormat::Text,
                             allow_primitive: true,
                             expand_empty_elements: false,
+                            space_before_closing_tag: false,
                         },
                         key: XmlName("root"),
                     };
@@ -1349,6 +1358,7 @@ mod tests {
                             text_format: TextFormat::Text,
                             allow_primitive: true,
                             expand_empty_elements: false,
+                            space_before_closing_tag: false,
                         },
                         key: XmlName("root"),
                     };
@@ -1376,6 +1386,7 @@ mod tests {
                             text_format: TextFormat::Text,
                             allow_primitive: true,
                             expand_empty_elements: false,
+                            space_before_closing_tag: false,
                         },
                         key: XmlName("root"),
                     };
@@ -2084,6 +2095,7 @@ mod tests {
                             text_format: TextFormat::Text,
                             allow_primitive: true,
                             expand_empty_elements: true,
+                            space_before_closing_tag: false,
                         },
                         key: XmlName("root"),
                     };

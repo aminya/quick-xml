@@ -569,6 +569,7 @@ impl<'w, 'r, W: Write> Serializer<'w, 'r, W> {
                 text_format: TextFormat::Text,
                 allow_primitive: true,
                 expand_empty_elements: false,
+                space_before_closing_tag: false,
             },
             root_tag: None,
         }
@@ -636,6 +637,7 @@ impl<'w, 'r, W: Write> Serializer<'w, 'r, W> {
                 text_format: TextFormat::Text,
                 allow_primitive: true,
                 expand_empty_elements: false,
+                space_before_closing_tag: false,
             },
             root_tag: root_tag.map(XmlName::try_from).transpose()?,
         })
@@ -719,6 +721,35 @@ impl<'w, 'r, W: Write> Serializer<'w, 'r, W> {
     /// Default: [`QuoteLevel::Minimal`]
     pub fn set_quote_level(&mut self, level: QuoteLevel) -> &mut Self {
         self.ser.level = level;
+        self
+    }
+
+    /// Enable or disable adding a space before the closing `>` or `/>`.
+    /// Defaults to `false`.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// # use pretty_assertions::assert_eq;
+    /// # use serde::Serialize;
+    /// # use quick_xml::se::Serializer;
+    ///
+    /// #[derive(Serialize)]
+    /// struct Root {
+    ///     #[serde(rename = "@attr")]
+    ///     attr: &'static str,
+    /// }
+    ///
+    /// let mut buffer = String::new();
+    /// let mut ser = Serializer::new(&mut buffer);
+    /// ser.space_before_closing_tag(true);
+    ///
+    /// let data = Root { attr: "value" };
+    /// data.serialize(ser).unwrap();
+    /// assert_eq!(buffer, r#"<Root attr="value" />"#);
+    /// ```
+    pub fn space_before_closing_tag(&mut self, enable: bool) -> &mut Self {
+        self.ser.space_before_closing_tag = enable;
         self
     }
 
@@ -1025,5 +1056,107 @@ mod quote_level {
                 <element>special chars: &amp;, &lt;, &gt;, &quot;, &apos;</element>\
             </Example>"
         );
+    }
+}
+
+#[cfg(test)]
+mod space_before_closing_tag {
+    use super::*;
+    use pretty_assertions::assert_eq;
+    use serde::Serialize;
+
+    #[derive(Debug, PartialEq, Serialize)]
+    struct Empty;
+
+    #[derive(Debug, PartialEq, Serialize)]
+    struct WithContent {
+        value: &'static str,
+    }
+
+    #[derive(Debug, PartialEq, Serialize)]
+    struct WithAttribute {
+        #[serde(rename = "@attr")]
+        attr: &'static str,
+    }
+
+    #[derive(Debug, PartialEq, Serialize)]
+    struct WithAttributeAndContent {
+        #[serde(rename = "@attr")]
+        attr: &'static str,
+        value: &'static str,
+    }
+
+    #[test]
+    fn empty_element() {
+        let mut buffer = String::new();
+        let mut ser = Serializer::new(&mut buffer);
+        ser.space_before_closing_tag(true);
+
+        Empty.serialize(ser).unwrap();
+        assert_eq!(buffer, "<Empty />");
+    }
+
+    #[test]
+    fn element_with_content() {
+        let mut buffer = String::new();
+        let mut ser = Serializer::new(&mut buffer);
+        ser.space_before_closing_tag(true);
+
+        let data = WithContent { value: "test" };
+        data.serialize(ser).unwrap();
+        assert_eq!(
+            buffer,
+            "<WithContent ><value>test</value></WithContent>"
+        );
+    }
+
+    #[test]
+    fn element_with_attribute() {
+        let mut buffer = String::new();
+        let mut ser = Serializer::new(&mut buffer);
+        ser.space_before_closing_tag(true);
+
+        let data = WithAttribute { attr: "value" };
+        data.serialize(ser).unwrap();
+        assert_eq!(buffer, r#"<WithAttribute attr="value" />"#);
+    }
+
+    #[test]
+    fn element_with_attribute_and_content() {
+        let mut buffer = String::new();
+        let mut ser = Serializer::new(&mut buffer);
+        ser.space_before_closing_tag(true);
+
+        let data = WithAttributeAndContent {
+            attr: "value",
+            value: "content",
+        };
+        data.serialize(ser).unwrap();
+        assert_eq!(
+            buffer,
+            r#"<WithAttributeAndContent attr="value" ><value>content</value></WithAttributeAndContent>"#
+        );
+    }
+
+    #[test]
+    fn disabled_by_default() {
+        let mut buffer = String::new();
+        let ser = Serializer::new(&mut buffer);
+
+        let data = WithAttribute { attr: "value" };
+        data.serialize(ser).unwrap();
+        assert_eq!(buffer, r#"<WithAttribute attr="value"/>"#);
+    }
+
+    #[test]
+    fn with_expand_empty_elements() {
+        let mut buffer = String::new();
+        let mut ser = Serializer::new(&mut buffer);
+        ser.space_before_closing_tag(true);
+        ser.expand_empty_elements(true);
+
+        let data = WithAttribute { attr: "value" };
+        data.serialize(ser).unwrap();
+        assert_eq!(buffer, r#"<WithAttribute attr="value" ></WithAttribute>"#);
     }
 }
